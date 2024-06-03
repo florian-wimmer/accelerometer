@@ -5,6 +5,7 @@
 #include "gpio_pin.h"
 #include "spi.h"
 #include "acc_sensor.h"
+#include <thread>
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
@@ -26,7 +27,7 @@ int main(int argc, char *argv[])
         printf("Sensor not connected!\n");
     }
 
-    sensor.write_ctrl1(XL_ODR::LSM6DSO_XL_UI_6667Hz_HP, XL_FS::LSM6DSO_XL_UI_2g);
+    sensor.write_ctrl1(XL_ODR::LSM6DSO_XL_UI_6667Hz_HP, XL_FS::LSM6DSO_XL_UI_4g);
 
     if (sensor.is_connected())
     {
@@ -35,22 +36,36 @@ int main(int argc, char *argv[])
 
     Vector_3D data;
 
-    auto start = std::chrono::high_resolution_clock::now();
+    std::chrono::milliseconds waitDuration(100);
 
-    /*for (int i = 0; i < 6000; i++)
+    while (true)
     {
-        sensor.read_xl_data(data);
-    }*/
 
-    sensor.read_xl_data(data);
+        auto start = std::chrono::high_resolution_clock::now();
 
-    auto end = std::chrono::high_resolution_clock::now();
+        /*for (int i = 0; i < 6000; i++)
+        {
+            sensor.read_xl_data(data);
+        }*/
 
-    std::chrono::duration<double> duration = end - start;
+        std::this_thread::sleep_for(waitDuration);
 
-    std::cout << "Execution time: " << duration.count() << " seconds" << std::endl;
+        if (sensor.is_connected())
+        {
+            sensor.read_xl_data(data);
+            printf("data: x:%f, y:%f, z:%f\n", data.x, data.y, data.z);
+        }
+        else
+        {
+            printf("Sensor not connected!\n");
+        }
 
-    printf("data: x:%f, y:%f, z:%f\n", data.x, data.y, data.z);
+        auto end = std::chrono::high_resolution_clock::now();
+
+        std::chrono::duration<double> duration = end - start;
+
+        // std::cout << "Execution time: " << duration.count() << " seconds" << std::endl;
+    }
 
     return 0;
 }
