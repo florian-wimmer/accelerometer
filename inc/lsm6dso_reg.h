@@ -290,6 +290,88 @@ extern "C"
     LSM6DSO_XL_UI_16g = 1, /* OIS full scale is also forced to be 16g */
   } XL_FS;
 
+  typedef enum
+  {
+    LSM6DSO_GY_UI_OFF = 0x00,       /* in power down */
+    LSM6DSO_GY_UI_12Hz5_HP = 0x01,  /* @12Hz5 (high performance) */
+    LSM6DSO_GY_UI_26Hz_HP = 0x02,   /* @26Hz  (high performance) */
+    LSM6DSO_GY_UI_52Hz_HP = 0x03,   /* @52Hz  (high performance) */
+    LSM6DSO_GY_UI_104Hz_HP = 0x04,  /* @104Hz (high performance) */
+    LSM6DSO_GY_UI_208Hz_HP = 0x05,  /* @208Hz (high performance) */
+    LSM6DSO_GY_UI_416Hz_HP = 0x06,  /* @416Hz (high performance) */
+    LSM6DSO_GY_UI_833Hz_HP = 0x07,  /* @833Hz (high performance) */
+    LSM6DSO_GY_UI_1667Hz_HP = 0x08, /* @1kHz66 (high performance) */
+    LSM6DSO_GY_UI_3333Hz_HP = 0x09, /* @3kHz33 (high performance) */
+    LSM6DSO_GY_UI_6667Hz_HP = 0x0A, /* @6kHz66 (high performance) */
+  } GY_ODR;
+
+  typedef enum
+  {
+    LSM6DSO_GY_UI_125dps = 1,
+    LSM6DSO_GY_UI_250dps = 0,
+    LSM6DSO_GY_UI_500dps = 2,
+    LSM6DSO_GY_UI_1000dps = 4,
+    LSM6DSO_GY_UI_2000dps = 6,
+  } GY_FS;
+
+  typedef enum
+  {
+    LSM6DSO_NO_DECIMATION = 0,
+    LSM6DSO_DEC_1 = 1,
+    LSM6DSO_DEC_8 = 2,
+    LSM6DSO_DEC_32 = 3,
+  } DEC_TS_BATCH;
+
+  typedef enum
+  {
+    LSM6DSO_TEMP_NOT_BATCHED = 0,
+    LSM6DSO_TEMP_BATCHED_AT_1Hz6 = 1,
+    LSM6DSO_TEMP_BATCHED_AT_12Hz5 = 2,
+    LSM6DSO_TEMP_BATCHED_AT_52Hz = 3,
+  } ODR_T_BATCH;
+
+  typedef enum
+  {
+    LSM6DSO_BYPASS_MODE = 0,
+    LSM6DSO_FIFO_MODE = 1,
+    LSM6DSO_STREAM_TO_FIFO_MODE = 3,
+    LSM6DSO_BYPASS_TO_STREAM_MODE = 4,
+    LSM6DSO_STREAM_MODE = 6,
+    LSM6DSO_BYPASS_TO_FIFO_MODE = 7,
+  } FIFO_MODE;
+
+  typedef enum
+  {
+    LSM6DSO_XL_NOT_BATCHED = 0,
+    LSM6DSO_XL_BATCHED_AT_12Hz5 = 1,
+    LSM6DSO_XL_BATCHED_AT_26Hz = 2,
+    LSM6DSO_XL_BATCHED_AT_52Hz = 3,
+    LSM6DSO_XL_BATCHED_AT_104Hz = 4,
+    LSM6DSO_XL_BATCHED_AT_208Hz = 5,
+    LSM6DSO_XL_BATCHED_AT_417Hz = 6,
+    LSM6DSO_XL_BATCHED_AT_833Hz = 7,
+    LSM6DSO_XL_BATCHED_AT_1667Hz = 8,
+    LSM6DSO_XL_BATCHED_AT_3333Hz = 9,
+    LSM6DSO_XL_BATCHED_AT_6667Hz = 10,
+    LSM6DSO_XL_BATCHED_AT_6Hz5 = 11,
+  } BDR_XL;
+
+  typedef enum
+  {
+    LSM6DSO_GY_NOT_BATCHED = 0,
+    LSM6DSO_GY_BATCHED_AT_12Hz5 = 1,
+    LSM6DSO_GY_BATCHED_AT_26Hz = 2,
+    LSM6DSO_GY_BATCHED_AT_52Hz = 3,
+    LSM6DSO_GY_BATCHED_AT_104Hz = 4,
+    LSM6DSO_GY_BATCHED_AT_208Hz = 5,
+    LSM6DSO_GY_BATCHED_AT_417Hz = 6,
+    LSM6DSO_GY_BATCHED_AT_833Hz = 7,
+    LSM6DSO_GY_BATCHED_AT_1667Hz = 8,
+    LSM6DSO_GY_BATCHED_AT_3333Hz = 9,
+    LSM6DSO_GY_BATCHED_AT_6667Hz = 10,
+    LSM6DSO_GY_BATCHED_AT_6Hz5 = 11,
+  } BDR_GY;
+
 #ifdef __cplusplus
 }
 #endif

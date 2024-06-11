@@ -4,19 +4,10 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <linux/gpio.h>
-
-// Register addresses for LSM6DSO (example, adjust as needed)
-#define WHO_AM_I_REG 0x0F
-#define CTRL1_XL 0x10
-#define OUTX_L_XL 0x28
-#define OUTX_H_XL 0x29
-#define OUTY_L_XL 0x2A
-#define OUTY_H_XL 0x2B
-#define OUTZ_L_XL 0x2C
-#define OUTZ_H_XL 0x2D
+#include <cstring>
 
 Acceleration_Sensor::Acceleration_Sensor(const std::string &spi_device, int cs_pin)
-    : spi(spi_device), csPin(cs_pin) {}
+    : spi(spi_device), csPin(cs_pin, GPIO_Pin::Direction::OUTPUT) {}
 
 Acceleration_Sensor::~Acceleration_Sensor()
 {
@@ -33,40 +24,82 @@ void Acceleration_Sensor::deselect()
     csPin.set_state(GPIO_Pin::State::HIGH);
 }
 
-uint8_t Acceleration_Sensor::readRegister(uint8_t reg_addr)
+bool Acceleration_Sensor::readRegister(uint8_t reg_addr, uint8_t &value)
 {
     reg_addr = reg_addr | 0x80;
+    bool com_flag;
 
     select();
 
-    spi.read(reg_addr, rx_buffer, 2);
+    com_flag = spi.read(reg_addr, rx_buffer, 2);
 
     deselect();
 
-    return rx_buffer[1];
+    // if communication was succesfull save value, otherwise set value to 0
+    if (com_flag && rx_buffer[0] == 0xFF)
+    {
+        value = rx_buffer[1];
+    }
+    else
+    {
+        com_flag = false;
+        value = 0;
+    }
+
+    return com_flag;
 }
 
-void Acceleration_Sensor::writeRegister(uint8_t reg_addr, uint8_t value)
+bool Acceleration_Sensor::writeRegister(uint8_t reg_addr, uint8_t value)
 {
     uint8_t tx[2];
+    bool com_flag;
 
     tx[0] = reg_addr;
     tx[1] = value;
 
     select();
 
-    spi.write(tx, 2);
+    com_flag = spi.write(tx, 2);
 
     deselect();
+
+    return com_flag;
+}
+
+bool Acceleration_Sensor::readMultipleRegister(uint8_t *reg_addr, uint8_t *value, uint16_t length)
+{
+    bool com_flag;
+
+    reg_addr[0] = reg_addr[0] | 0x80;
+
+    select();
+
+    com_flag = spi.transfer(reg_addr, rx_buffer, length);
+
+    deselect();
+
+    // if communication was succesfull save value, otherwise set value to 0
+    if (com_flag && rx_buffer[0] == 0xFF)
+    {
+        std::memcpy(value, rx_buffer, length * sizeof(uint8_t));
+    }
+    else
+    {
+        com_flag = false;
+        value = 0;
+    }
+
+    return com_flag;
 }
 
 bool Acceleration_Sensor::is_connected()
 {
-    uint8_t read_reg;
+    bool com_flag;
+    uint8_t value;
 
-    read_reg = readRegister(WHO_AM_I_REG);
+    com_flag = readRegister(LSM6DSO_WHO_AM_I, value);
 
-    if (read_reg == LSM6DSO_ID)
+    if (value == LSM6DSO_ID || com_flag)
     {
         return true;
     }
@@ -76,9 +109,48 @@ bool Acceleration_Sensor::is_connected()
     }
 }
 
-void Acceleration_Sensor::write_ctrl1(XL_ODR speed_config, XL_FS scale_config)
+bool Acceleration_Sensor::configure_fifo()
 {
-    uint8_t value = ((uint8_t)speed_config << 4) + ((uint8_t)scale_config << 2);
+    uint8_t value = 0;
+
+    // watermark 0-7
+    value = 250;
+    writeRegister(LSM6DSO_FIFO_CTRL1, value);
+
+    // watermark 8
+    value = 0;
+    writeRegister(LSM6DSO_FIFO_CTRL2, value);
+
+    value = ((uint8_t)LSM6DSO_GY_NOT_BATCHED << 4) | ((uint8_t)LSM6DSO_XL_BATCHED_AT_6667Hz);
+    writeRegister(LSM6DSO_FIFO_CTRL3, value);
+
+    value = ((uint8_t)LSM6DSO_NO_DECIMATION << 6) | ((uint8_t)LSM6DSO_TEMP_NOT_BATCHED << 4) | ((uint8_t)LSM6DSO_STREAM_MODE);
+    writeRegister(LSM6DSO_FIFO_CTRL4, value);
+
+    return true;
+}
+
+void Acceleration_Sensor::write_int1_ctrl()
+{
+    uint8_t value = 1;
+
+    writeRegister(LSM6DSO_INT1_CTRL, value);
+
+    return;
+}
+
+void Acceleration_Sensor::write_int2_ctrl()
+{
+    uint8_t value = 2;
+
+    writeRegister(LSM6DSO_INT2_CTRL, value);
+
+    return;
+}
+
+void Acceleration_Sensor::write_ctrl1_xl(XL_ODR speed_config, XL_FS scale_config)
+{
+    uint8_t value = ((uint8_t)speed_config << 4) | ((uint8_t)scale_config << 2);
 
     switch (scale_config)
     {
@@ -104,22 +176,75 @@ void Acceleration_Sensor::write_ctrl1(XL_ODR speed_config, XL_FS scale_config)
     return;
 }
 
+void Acceleration_Sensor::write_ctrl2_g(GY_ODR speed_config, GY_FS scale_config)
+{
+    uint8_t value = ((uint8_t)speed_config << 4) | ((uint8_t)scale_config << 1);
+
+    switch (scale_config)
+    {
+    case LSM6DSO_GY_UI_125dps:
+        gy_gain = 125;
+        break;
+    case LSM6DSO_GY_UI_250dps:
+        gy_gain = 250;
+        break;
+    case LSM6DSO_GY_UI_500dps:
+        gy_gain = 500;
+        break;
+    case LSM6DSO_GY_UI_1000dps:
+        gy_gain = 1000;
+        break;
+    case LSM6DSO_GY_UI_2000dps:
+        gy_gain = 2000;
+        break;
+    default:
+        gy_gain = 1;
+        break;
+    }
+
+    writeRegister(LSM6DSO_CTRL2_G, value);
+}
+
 bool Acceleration_Sensor::read_xl_data(Vector_3D &vec)
 {
-    uint8_t x_l = readRegister(OUTX_L_XL);
-    uint8_t x_h = readRegister(OUTX_H_XL);
-    uint8_t y_l = readRegister(OUTY_L_XL);
-    uint8_t y_h = readRegister(OUTY_H_XL);
-    uint8_t z_l = readRegister(OUTZ_L_XL);
-    uint8_t z_h = readRegister(OUTZ_H_XL);
+    bool com_flag = true;
 
-    vec.x = (int16_t)(x_h << 8 | x_l);
-    vec.y = (int16_t)(y_h << 8 | y_l);
-    vec.z = (int16_t)(z_h << 8 | z_l);
+    uint8_t reg_array[7] = {0};
+    uint8_t value_array[7];
+
+    reg_array[0] = LSM6DSO_OUTX_L_A;
+
+    com_flag = readMultipleRegister(reg_array, value_array, 7);
+
+    vec.x = (int16_t)(value_array[2] << 8 | value_array[1]);
+    vec.y = (int16_t)(value_array[4] << 8 | value_array[3]);
+    vec.z = (int16_t)(value_array[6] << 8 | value_array[5]);
 
     vec.x = vec.x * LSB_16BIT * 2 * xl_gain;
     vec.y = vec.y * LSB_16BIT * 2 * xl_gain;
     vec.z = vec.z * LSB_16BIT * 2 * xl_gain;
 
-    return true;
+    return com_flag;
+}
+
+bool Acceleration_Sensor::read_gy_data(Vector_3D &vec)
+{
+    bool com_flag = true;
+
+    uint8_t reg_array[7] = {0};
+    uint8_t value_array[7];
+
+    reg_array[0] = LSM6DSO_OUTX_L_G;
+
+    com_flag = readMultipleRegister(reg_array, value_array, 7);
+
+    vec.x = (int16_t)(value_array[2] << 8 | value_array[1]);
+    vec.y = (int16_t)(value_array[4] << 8 | value_array[3]);
+    vec.z = (int16_t)(value_array[6] << 8 | value_array[5]);
+
+    vec.x = vec.x * LSB_16BIT * 2 * gy_gain;
+    vec.y = vec.y * LSB_16BIT * 2 * gy_gain;
+    vec.z = vec.z * LSB_16BIT * 2 * gy_gain;
+
+    return com_flag;
 }

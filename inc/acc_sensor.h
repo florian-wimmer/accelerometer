@@ -24,23 +24,33 @@ public:
     bool is_connected();
 
     bool configure();
-    void write_ctrl1(XL_ODR speed_config, XL_FS scale_config);
+
+    bool configure_fifo();
+
+    void write_int1_ctrl();
+    void write_int2_ctrl();
+
+    void write_ctrl1_xl(XL_ODR speed_config, XL_FS scale_config);
+    void write_ctrl2_g(GY_ODR speed_config, GY_FS scale_config);
 
     bool read_xl_data(Vector_3D &vec);
+    bool read_gy_data(Vector_3D &vec);
 
 private:
     SPI_Handler spi;
     GPIO_Pin csPin;
 
     double xl_gain = 1;
+    double gy_gain = 1;
 
     uint8_t rx_buffer[BUFFER_SIZE];
     uint8_t tx_buffer[BUFFER_SIZE];
 
     void select();
     void deselect();
-    uint8_t readRegister(uint8_t reg_addr);
-    void writeRegister(uint8_t reg_addr, uint8_t value);
+    bool readRegister(uint8_t reg_addr, uint8_t &value);
+    bool writeRegister(uint8_t reg_addr, uint8_t value);
+    bool readMultipleRegister(uint8_t *reg_addr, uint8_t *value, uint16_t length);
 };
 
 #endif // ACCELERATION_SENSOR_H

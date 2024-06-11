@@ -12,11 +12,18 @@ public:
         LOW = 0,
         HIGH = 1,
     };
+    enum class Direction
+    {
+        INPUT = 0,
+        OUTPUT = 1,
+    };
 
-    GPIO_Pin(int pinNumber);
+    GPIO_Pin(int pin_number, Direction pin_direction);
     ~GPIO_Pin();
 
     static bool initialize_chip();
+
+    gpiod_line *get_line();
 
     bool set_state(State value);
 
@@ -24,7 +31,9 @@ private:
     static gpiod_chip *chip;
     static const char *chipName;
     static bool chip_initialized;
-    int pinNumber;
+
+    int pin_number;
+    Direction pin_direction;
 
     gpiod_line *line;
 };

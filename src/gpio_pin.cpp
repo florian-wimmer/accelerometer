@@ -7,15 +7,16 @@ gpiod_chip *GPIO_Pin::chip;
 const char *GPIO_Pin::chipName = "gpiochip4";
 bool GPIO_Pin::chip_initialized = false;
 
-GPIO_Pin::GPIO_Pin(int pinNumber)
-    : pinNumber(pinNumber)
+GPIO_Pin::GPIO_Pin(int pin_number, Direction pin_direction)
+    : pin_number(pin_number), pin_direction(pin_direction)
 {
     if (!chip_initialized)
     {
         initialize_chip();
     }
 
-    line = gpiod_chip_get_line(chip, pinNumber);
+    // Get GPIO line
+    line = gpiod_chip_get_line(chip, pin_number);
     if (!line)
     {
         std::cerr << "Could not get line." << std::endl;
@@ -23,11 +24,25 @@ GPIO_Pin::GPIO_Pin(int pinNumber)
         return;
     }
 
-    if (gpiod_line_request_output(line, "blinktest", 0) < 0)
+    if (pin_direction == Direction::OUTPUT)
     {
-        std::cerr << "Could not set line as output." << std::endl;
-        gpiod_chip_close(chip);
-        return;
+        // Request GPIO line as output
+        if (gpiod_line_request_output(line, "blinktest", 0) < 0)
+        {
+            std::cerr << "Could not set line as output." << std::endl;
+            gpiod_chip_close(chip);
+            return;
+        }
+    }
+    else if (pin_direction == Direction::INPUT)
+    {
+        // Request GPIO line as input with both edge detection
+        if (gpiod_line_request_both_edges_events(line, "gpio_event_listener") < 0)
+        {
+            std::cerr << "Failed to request GPIO line as input" << std::endl;
+            gpiod_chip_close(chip);
+            return;
+        }
     }
 }
 
@@ -37,8 +52,7 @@ GPIO_Pin::~GPIO_Pin()
 
 bool GPIO_Pin::initialize_chip()
 {
-    // initialize gpio chip
-
+    // Initialize GPIO chip
     chip = gpiod_chip_open_by_name(chipName);
     if (!chip)
     {
@@ -49,6 +63,11 @@ bool GPIO_Pin::initialize_chip()
     chip_initialized = true;
 
     return true;
+}
+
+gpiod_line *GPIO_Pin::get_line()
+{
+    return line;
 }
 
 bool GPIO_Pin::set_state(State value)
