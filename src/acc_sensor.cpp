@@ -130,18 +130,18 @@ bool Acceleration_Sensor::configure_fifo()
     return true;
 }
 
-void Acceleration_Sensor::write_int1_ctrl()
+void Acceleration_Sensor::write_int1_ctrl(INT_CTRL int_config)
 {
-    uint8_t value = 1;
+    uint8_t value = (uint8_t)int_config;
 
     writeRegister(LSM6DSO_INT1_CTRL, value);
 
     return;
 }
 
-void Acceleration_Sensor::write_int2_ctrl()
+void Acceleration_Sensor::write_int2_ctrl(INT_CTRL int_config)
 {
-    uint8_t value = 2;
+    uint8_t value = (uint8_t)int_config;
 
     writeRegister(LSM6DSO_INT2_CTRL, value);
 
@@ -245,6 +245,32 @@ bool Acceleration_Sensor::read_gy_data(Vector_3D &vec)
     vec.x = vec.x * LSB_16BIT * 2 * gy_gain;
     vec.y = vec.y * LSB_16BIT * 2 * gy_gain;
     vec.z = vec.z * LSB_16BIT * 2 * gy_gain;
+
+    return com_flag;
+}
+
+bool Acceleration_Sensor::read_single_xl_data(Vector_3D &vec)
+{
+    bool com_flag = true;
+
+    uint8_t x_l, x_h;
+    uint8_t y_l, y_h;
+    uint8_t z_l, z_h;
+
+    readRegister(LSM6DSO_OUTX_L_A, x_l);
+    readRegister(LSM6DSO_OUTX_H_A, x_h);
+    readRegister(LSM6DSO_OUTY_L_A, y_l);
+    readRegister(LSM6DSO_OUTY_H_A, y_h);
+    readRegister(LSM6DSO_OUTZ_L_A, z_l);
+    readRegister(LSM6DSO_OUTZ_H_A, z_h);
+
+    vec.x = (int16_t)(x_h << 8 | x_l);
+    vec.y = (int16_t)(y_h << 8 | y_l);
+    vec.z = (int16_t)(z_h << 8 | z_l);
+
+    vec.x = vec.x * LSB_16BIT * 2 * xl_gain;
+    vec.y = vec.y * LSB_16BIT * 2 * xl_gain;
+    vec.z = vec.z * LSB_16BIT * 2 * xl_gain;
 
     return com_flag;
 }

@@ -17,17 +17,29 @@
 
 static const char *device = "/dev/spidev0.0";
 
+bool xl_detected = true;
+bool gy_detected = true;
+
 // Interrupt service routine (ISR)
-void handle_event(struct gpiod_line_event *event)
+void handle_event(struct gpiod_line_event *event, int pin_number)
 {
     if (event->event_type == GPIOD_LINE_EVENT_RISING_EDGE)
     {
-        std::cout << "Rising edge detected!" << std::endl;
+        if (pin_number == 5)
+        {
+            xl_detected = true;
+        }
+        if (pin_number == 6)
+        {
+            gy_detected = true;
+        }
+
+        // std::cout << "Interrupt detected: " << pin_number << std::endl;
     }
 }
 
 // Function to handle GPIO events in a separate thread
-void event_listener(gpiod_line *line)
+void event_listener(gpiod_line *line, int pin_number)
 {
     while (true)
     {
@@ -37,7 +49,7 @@ void event_listener(gpiod_line *line)
         if (ret > 0)
         {
             gpiod_line_event_read(line, &event);
-            handle_event(&event);
+            handle_event(&event, pin_number);
         }
         else if (ret < 0)
         {
@@ -53,12 +65,12 @@ void event_listener(gpiod_line *line)
 int main(int argc, char *argv[])
 {
     // SPI_Handler spi(device);
-    GPIO_Pin int_Pin_1(5, GPIO_Pin::Direction::INPUT);
-    GPIO_Pin int_Pin_2(6, GPIO_Pin::Direction::INPUT);
+    GPIO_Pin int_Pin_1(6, GPIO_Pin::Direction::INPUT); // INT_1
+    GPIO_Pin int_Pin_2(5, GPIO_Pin::Direction::INPUT); // INT_2
 
     // Start event listener thread
-    std::thread listener_thread1(event_listener, int_Pin_1.get_line());
-    std::thread listener_thread2(event_listener, int_Pin_2.get_line());
+    std::thread listener_thread1(event_listener, int_Pin_1.get_line(), int_Pin_1.get_pin_number());
+    std::thread listener_thread2(event_listener, int_Pin_2.get_line(), int_Pin_2.get_pin_number());
 
     Acceleration_Sensor sensor(device, 17);
 
@@ -71,12 +83,14 @@ int main(int argc, char *argv[])
         printf("Sensor not connected!\n");
     }
 
+    sensor.write_int1_ctrl(INT_CTRL::INT_DRDY_XL);
+    sensor.write_int2_ctrl(INT_CTRL::INT_DRDY_G);
     sensor.write_ctrl1_xl(XL_ODR::LSM6DSO_XL_UI_6667Hz_HP, XL_FS::LSM6DSO_XL_UI_4g);
     sensor.write_ctrl2_g(GY_ODR::LSM6DSO_GY_UI_6667Hz_HP, GY_FS::LSM6DSO_GY_UI_125dps);
 
     // sensor.configure_fifo();
 
-    Vector_3D data;
+    Vector_3D data_xl, data_gy;
 
     std::chrono::milliseconds waitDuration(100);
 
@@ -94,43 +108,48 @@ int main(int argc, char *argv[])
     });
 
     auto start = std::chrono::high_resolution_clock::now();
+    int time = 0;
 
     while (true)
     {
-
-        /*for (int i = 0; i < 20000; i++)
+        if (xl_detected && gy_detected)
         {
-            sensor.read_xl_data(data);
+            xl_detected = false;
+            gy_detected = false;
 
-            auto end = std::chrono::high_resolution_clock::now();
+            sensor.read_xl_data(data_xl);
+            sensor.read_gy_data(data_gy);
+            std::chrono::duration<double> duration = std::chrono::high_resolution_clock::now() - start;
 
-            std::chrono::duration<double> duration = end - start;
+            // std::cout << "Values Saved: " << duration.count() << " seconds" << std::endl;
 
-            writer.writeValues(duration.count(), data, data);
-        }*/
+            writer.writeValues(duration.count(), data_xl, data_gy);
+        }
 
+        std::chrono::duration<double> duration = std::chrono::high_resolution_clock::now() - start;
+
+        if (duration.count() > time)
+        {
+            time++;
+            std::cout << "Execution time: " << duration.count() << " seconds" << std::endl;
+        }
+
+        /*
         std::this_thread::sleep_for(waitDuration);
 
         if (sensor.is_connected())
         {
-            sensor.read_xl_data(data);
-            printf("XL data: x:%f, y:%f, z:%f\n", data.x, data.y, data.z);
+            sensor.read_xl_data(data_xl);
+            printf("XL data: x:%f, y:%f, z:%f\n", data_xl.x, data_xl.y, data_xl.z);
 
-            // com_flag = sensor.read_fifo_status();
-
-            sensor.read_gy_data(data);
-            printf("GY data: x:%f, y:%f, z:%f\n", data.x, data.y, data.z);
+            sensor.read_gy_data(data_gy);
+            printf("GY data: x:%f, y:%f, z:%f\n", data_gy.x, data_gy.y, data_gy.z);
         }
         else
         {
             printf("Sensor not connected!\n");
         }
-
-        auto end = std::chrono::high_resolution_clock::now();
-
-        std::chrono::duration<double> duration = end - start;
-
-        std::cout << "Execution time: " << duration.count() << " seconds" << std::endl;
+        */
     }
 
     return 0;

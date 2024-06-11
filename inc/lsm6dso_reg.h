@@ -372,6 +372,18 @@ extern "C"
     LSM6DSO_GY_BATCHED_AT_6Hz5 = 11,
   } BDR_GY;
 
+  typedef enum
+  {
+    INT_DRDY_XL = 1,
+    INT_DRDY_G = 2,
+    INT_BOOT = 4,
+    INT_FIFO_TH = 8,
+    INT_FIFO_OVR = 16,
+    INT_FIFO_FULL = 32,
+    INT_CNT_BDR = 64,
+    DEN_DRDY_flag = 128,
+  } INT_CTRL;
+
 #ifdef __cplusplus
 }
 #endif

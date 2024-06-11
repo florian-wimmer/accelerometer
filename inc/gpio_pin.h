@@ -24,6 +24,7 @@ public:
     static bool initialize_chip();
 
     gpiod_line *get_line();
+    int get_pin_number();
 
     bool set_state(State value);
 

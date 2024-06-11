@@ -70,6 +70,11 @@ gpiod_line *GPIO_Pin::get_line()
     return line;
 }
 
+int GPIO_Pin::get_pin_number()
+{
+    return pin_number;
+}
+
 bool GPIO_Pin::set_state(State value)
 {
     gpiod_line_set_value(line, (int)value);

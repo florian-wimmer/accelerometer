@@ -27,14 +27,16 @@ public:
 
     bool configure_fifo();
 
-    void write_int1_ctrl();
-    void write_int2_ctrl();
+    void write_int1_ctrl(INT_CTRL int_config);
+    void write_int2_ctrl(INT_CTRL int_config);
 
     void write_ctrl1_xl(XL_ODR speed_config, XL_FS scale_config);
     void write_ctrl2_g(GY_ODR speed_config, GY_FS scale_config);
 
     bool read_xl_data(Vector_3D &vec);
     bool read_gy_data(Vector_3D &vec);
+
+    bool read_single_xl_data(Vector_3D &vec);
 
 private:
     SPI_Handler spi;
