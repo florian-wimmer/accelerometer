@@ -10,7 +10,7 @@
 class CSVWriter
 {
 public:
-    CSVWriter(const std::string &filename, size_t bufferSize = 1024 * 1024);
+    CSVWriter(const std::string &filename);
     ~CSVWriter();
 
     void writeRow(const std::vector<std::string> &row);
@@ -18,13 +18,8 @@ public:
     void writeValues(double time, Vector_3D vec_xl, Vector_3D vec_g);
 
 private:
-    std::ofstream outFile;
-    std::string filename;
-    size_t bufferSize;
-    char *buffer;
-    size_t bufferIndex;
-
-    void flushBuffer();
+    std::ofstream outFile; // File stream
+    std::string filename;  // File name
 };
 
 #endif // CSVWRITER_H

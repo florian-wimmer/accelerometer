@@ -3,7 +3,7 @@
 
 #include "spi.h"
 #include "gpio_pin.h"
-#include <lsm6dso_reg.h>
+#include <lsm6dso_reg.h> // here are all registeres and their according values are defined
 
 #define BUFFER_SIZE 9216
 #define LSB_16BIT 1.0 / 65536.0
@@ -22,10 +22,6 @@ public:
     ~Acceleration_Sensor();
 
     bool is_connected();
-
-    bool configure();
-
-    bool configure_fifo();
 
     void write_int1_ctrl(INT_CTRL int_config);
     void write_int2_ctrl(INT_CTRL int_config);

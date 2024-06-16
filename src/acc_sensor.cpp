@@ -12,18 +12,22 @@ Acceleration_Sensor::Acceleration_Sensor(const std::string &spi_device, int cs_p
 Acceleration_Sensor::~Acceleration_Sensor()
 {
 }
+
+// Chip Select - sensor - select
 void Acceleration_Sensor::select()
 {
     // Pull CS low
     csPin.set_state(GPIO_Pin::State::LOW);
 }
 
+// Chip Select - sensor - deselect
 void Acceleration_Sensor::deselect()
 {
     // Pull CS high
     csPin.set_state(GPIO_Pin::State::HIGH);
 }
 
+// write to sensor - single regsiter
 bool Acceleration_Sensor::readRegister(uint8_t reg_addr, uint8_t &value)
 {
     reg_addr = reg_addr | 0x80;
@@ -49,6 +53,7 @@ bool Acceleration_Sensor::readRegister(uint8_t reg_addr, uint8_t &value)
     return com_flag;
 }
 
+// read form sensor - single regsiter
 bool Acceleration_Sensor::writeRegister(uint8_t reg_addr, uint8_t value)
 {
     uint8_t tx[2];
@@ -66,6 +71,7 @@ bool Acceleration_Sensor::writeRegister(uint8_t reg_addr, uint8_t value)
     return com_flag;
 }
 
+// read from sensor - variable length
 bool Acceleration_Sensor::readMultipleRegister(uint8_t *reg_addr, uint8_t *value, uint16_t length)
 {
     bool com_flag;
@@ -92,6 +98,7 @@ bool Acceleration_Sensor::readMultipleRegister(uint8_t *reg_addr, uint8_t *value
     return com_flag;
 }
 
+// check if device is connected, this register should return always the same value
 bool Acceleration_Sensor::is_connected()
 {
     bool com_flag;
@@ -109,27 +116,7 @@ bool Acceleration_Sensor::is_connected()
     }
 }
 
-bool Acceleration_Sensor::configure_fifo()
-{
-    uint8_t value = 0;
-
-    // watermark 0-7
-    value = 250;
-    writeRegister(LSM6DSO_FIFO_CTRL1, value);
-
-    // watermark 8
-    value = 0;
-    writeRegister(LSM6DSO_FIFO_CTRL2, value);
-
-    value = ((uint8_t)LSM6DSO_GY_NOT_BATCHED << 4) | ((uint8_t)LSM6DSO_XL_BATCHED_AT_6667Hz);
-    writeRegister(LSM6DSO_FIFO_CTRL3, value);
-
-    value = ((uint8_t)LSM6DSO_NO_DECIMATION << 6) | ((uint8_t)LSM6DSO_TEMP_NOT_BATCHED << 4) | ((uint8_t)LSM6DSO_STREAM_MODE);
-    writeRegister(LSM6DSO_FIFO_CTRL4, value);
-
-    return true;
-}
-
+// configure int1 pin
 void Acceleration_Sensor::write_int1_ctrl(INT_CTRL int_config)
 {
     uint8_t value = (uint8_t)int_config;
@@ -139,6 +126,7 @@ void Acceleration_Sensor::write_int1_ctrl(INT_CTRL int_config)
     return;
 }
 
+// configure int2 pin
 void Acceleration_Sensor::write_int2_ctrl(INT_CTRL int_config)
 {
     uint8_t value = (uint8_t)int_config;
@@ -148,6 +136,9 @@ void Acceleration_Sensor::write_int2_ctrl(INT_CTRL int_config)
     return;
 }
 
+// configure xl sensor
+// speed -> measurement frequency
+// scale -> sensor range
 void Acceleration_Sensor::write_ctrl1_xl(XL_ODR speed_config, XL_FS scale_config)
 {
     uint8_t value = ((uint8_t)speed_config << 4) | ((uint8_t)scale_config << 2);
@@ -176,6 +167,9 @@ void Acceleration_Sensor::write_ctrl1_xl(XL_ODR speed_config, XL_FS scale_config
     return;
 }
 
+// configure gy sensor
+// speed -> measurement frequency
+// scale -> sensor range
 void Acceleration_Sensor::write_ctrl2_g(GY_ODR speed_config, GY_FS scale_config)
 {
     uint8_t value = ((uint8_t)speed_config << 4) | ((uint8_t)scale_config << 1);
@@ -205,6 +199,7 @@ void Acceleration_Sensor::write_ctrl2_g(GY_ODR speed_config, GY_FS scale_config)
     writeRegister(LSM6DSO_CTRL2_G, value);
 }
 
+// read the current xl value (g)
 bool Acceleration_Sensor::read_xl_data(Vector_3D &vec)
 {
     bool com_flag = true;
@@ -227,6 +222,7 @@ bool Acceleration_Sensor::read_xl_data(Vector_3D &vec)
     return com_flag;
 }
 
+// read the current gy value (dps)
 bool Acceleration_Sensor::read_gy_data(Vector_3D &vec)
 {
     bool com_flag = true;
@@ -249,6 +245,8 @@ bool Acceleration_Sensor::read_gy_data(Vector_3D &vec)
     return com_flag;
 }
 
+// read the current xl value (g)
+// reads each regsiter seperatly, therefore slow
 bool Acceleration_Sensor::read_single_xl_data(Vector_3D &vec)
 {
     bool com_flag = true;
