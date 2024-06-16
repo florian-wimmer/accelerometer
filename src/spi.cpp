@@ -11,8 +11,8 @@
 #include <linux/spi/spidev.h>
 #include <unistd.h>
 
-SPI_Handler::SPI_Handler(const std::string &device, uint8_t mode, uint32_t speedHz, uint8_t bitsPerWord, uint8_t delay)
-    : spiFile(-1), devicePath(device), mode(mode), speedHz(speedHz), bitsPerWord(bitsPerWord), delay(delay)
+SPI_Handler::SPI_Handler(const std::string &device, uint32_t speedHz, uint8_t bitsPerWord, uint8_t delay)
+    : spiFile(-1), devicePath(device), speedHz(speedHz), bitsPerWord(bitsPerWord), delay(delay)
 {
     openHandler();
 }
@@ -22,6 +22,7 @@ SPI_Handler::~SPI_Handler()
     closeHandler();
 }
 
+// open SPI Interface
 bool SPI_Handler::openHandler()
 {
     spiFile = ::open(devicePath.c_str(), O_RDWR);
@@ -34,6 +35,7 @@ bool SPI_Handler::openHandler()
     return true;
 }
 
+// close SPI interface
 void SPI_Handler::closeHandler()
 {
     if (spiFile >= 0)
@@ -43,6 +45,7 @@ void SPI_Handler::closeHandler()
     }
 }
 
+// tansmit and receiver message from interface
 bool SPI_Handler::transfer(const uint8_t *txData, uint8_t *rxData, size_t length)
 {
     struct spi_ioc_transfer tr = {
@@ -63,11 +66,13 @@ bool SPI_Handler::transfer(const uint8_t *txData, uint8_t *rxData, size_t length
     return true;
 }
 
+// write data from interface
 bool SPI_Handler::write(const uint8_t *txData, size_t length)
 {
     return transfer(txData, nullptr, length);
 }
 
+// write data from interface
 bool SPI_Handler::read(uint8_t ReadAddr, uint8_t *rxData, size_t length)
 {
     uint8_t tx[length];

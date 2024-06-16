@@ -21,8 +21,6 @@ public:
     GPIO_Pin(int pin_number, Direction pin_direction);
     ~GPIO_Pin();
 
-    static bool initialize_chip();
-
     gpiod_line *get_line();
     int get_pin_number();
 
@@ -37,6 +35,8 @@ private:
     Direction pin_direction;
 
     gpiod_line *line;
+
+    static bool initialize_chip();
 };
 
 #endif

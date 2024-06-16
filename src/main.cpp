@@ -13,8 +13,7 @@
 #include <unistd.h>
 #include <thread>
 
-#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
-
+// Device defintion for SPI Communition, depends on the used SPI interface.
 static const char *device = "/dev/spidev0.0";
 
 bool xl_detected = true;
@@ -25,6 +24,7 @@ void handle_event(struct gpiod_line_event *event, int pin_number)
 {
     if (event->event_type == GPIOD_LINE_EVENT_RISING_EDGE)
     {
+        // the according flag is set, whenever a new sensor value is available
         if (pin_number == 5)
         {
             xl_detected = true;
@@ -33,8 +33,6 @@ void handle_event(struct gpiod_line_event *event, int pin_number)
         {
             gy_detected = true;
         }
-
-        // std::cout << "Interrupt detected: " << pin_number << std::endl;
     }
 }
 
@@ -48,6 +46,7 @@ void event_listener(gpiod_line *line, int pin_number)
 
         if (ret > 0)
         {
+            // this will call the event handle
             gpiod_line_event_read(line, &event);
             handle_event(&event, pin_number);
         }
@@ -59,12 +58,12 @@ void event_listener(gpiod_line *line, int pin_number)
     }
 }
 
-#define CHIP_NAME "/dev/gpiochip4"
-#define GPIO_LINE 20
-
 int main(int argc, char *argv[])
 {
-    // SPI_Handler spi(device);
+    // Data Variable
+    Vector_3D data_xl, data_gy;
+
+    // Define Interrupt Pins
     GPIO_Pin int_Pin_1(6, GPIO_Pin::Direction::INPUT); // INT_1
     GPIO_Pin int_Pin_2(5, GPIO_Pin::Direction::INPUT); // INT_2
 
@@ -72,8 +71,10 @@ int main(int argc, char *argv[])
     std::thread listener_thread1(event_listener, int_Pin_1.get_line(), int_Pin_1.get_pin_number());
     std::thread listener_thread2(event_listener, int_Pin_2.get_line(), int_Pin_2.get_pin_number());
 
+    // Acceleration Sensor
     Acceleration_Sensor sensor(device, 17);
 
+    // Check if device is connected
     if (sensor.is_connected())
     {
         printf("Sensor available!\n");
@@ -83,20 +84,17 @@ int main(int argc, char *argv[])
         printf("Sensor not connected!\n");
     }
 
+    // Configure the Sensor
+    // Define the Interrupt Condition
     sensor.write_int1_ctrl(INT_CTRL::INT_DRDY_XL);
     sensor.write_int2_ctrl(INT_CTRL::INT_DRDY_G);
+    // Define Sensor Speed and Resolution
     sensor.write_ctrl1_xl(XL_ODR::LSM6DSO_XL_UI_6667Hz_HP, XL_FS::LSM6DSO_XL_UI_4g);
     sensor.write_ctrl2_g(GY_ODR::LSM6DSO_GY_UI_6667Hz_HP, GY_FS::LSM6DSO_GY_UI_125dps);
 
-    // sensor.configure_fifo();
-
-    Vector_3D data_xl, data_gy;
-
-    std::chrono::milliseconds waitDuration(100);
-
-    GPIO_Pin test_pin(21, GPIO_Pin::Direction::OUTPUT);
-
+    // Initialize save file
     CSVWriter writer("output.csv");
+
     writer.writeRow({
         "Time(s)",
         "Acceleration X (g)",
@@ -107,49 +105,36 @@ int main(int argc, char *argv[])
         "Angular Momentum Z (dps)",
     });
 
+    // Initialize time measurement
     auto start = std::chrono::high_resolution_clock::now();
     int time = 0;
 
     while (true)
     {
+        // this triggers when a sensor value is ready, for both accelertion and gyro
         if (xl_detected && gy_detected)
         {
             xl_detected = false;
             gy_detected = false;
 
+            // read sensor data and measure time difference
             sensor.read_xl_data(data_xl);
             sensor.read_gy_data(data_gy);
             std::chrono::duration<double> duration = std::chrono::high_resolution_clock::now() - start;
 
-            // std::cout << "Values Saved: " << duration.count() << " seconds" << std::endl;
-
+            // write data
             writer.writeValues(duration.count(), data_xl, data_gy);
         }
 
+        // keep track of duration
         std::chrono::duration<double> duration = std::chrono::high_resolution_clock::now() - start;
 
+        // Output to show how long the measurement is running
         if (duration.count() > time)
         {
             time++;
             std::cout << "Execution time: " << duration.count() << " seconds" << std::endl;
         }
-
-        /*
-        std::this_thread::sleep_for(waitDuration);
-
-        if (sensor.is_connected())
-        {
-            sensor.read_xl_data(data_xl);
-            printf("XL data: x:%f, y:%f, z:%f\n", data_xl.x, data_xl.y, data_xl.z);
-
-            sensor.read_gy_data(data_gy);
-            printf("GY data: x:%f, y:%f, z:%f\n", data_gy.x, data_gy.y, data_gy.z);
-        }
-        else
-        {
-            printf("Sensor not connected!\n");
-        }
-        */
     }
 
     return 0;

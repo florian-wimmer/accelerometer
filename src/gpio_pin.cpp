@@ -4,12 +4,13 @@
 
 // Initialize static member of class
 gpiod_chip *GPIO_Pin::chip;
-const char *GPIO_Pin::chipName = "gpiochip4";
+const char *GPIO_Pin::chipName = "gpiochip4"; // Raspberry Pi specific value
 bool GPIO_Pin::chip_initialized = false;
 
 GPIO_Pin::GPIO_Pin(int pin_number, Direction pin_direction)
     : pin_number(pin_number), pin_direction(pin_direction)
 {
+    // Initialize GPIO chip
     if (!chip_initialized)
     {
         initialize_chip();
@@ -24,6 +25,7 @@ GPIO_Pin::GPIO_Pin(int pin_number, Direction pin_direction)
         return;
     }
 
+    // Set the output direction - can only be hold by one instance
     if (pin_direction == Direction::OUTPUT)
     {
         // Request GPIO line as output
@@ -70,11 +72,13 @@ gpiod_line *GPIO_Pin::get_line()
     return line;
 }
 
+// get pin number - as numbered in raspberry pi docu
 int GPIO_Pin::get_pin_number()
 {
     return pin_number;
 }
 
+// change state, only possible when set as output
 bool GPIO_Pin::set_state(State value)
 {
     gpiod_line_set_value(line, (int)value);
