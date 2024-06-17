@@ -37,6 +37,11 @@ void CSVWriter::writeRow(const std::vector<std::string> &row)
     }
     line += '\n';
 
+    writeLine(line);
+}
+
+void CSVWriter::writeLine(std::string line)
+{
     size_t len = line.size();
 
     outFile.write(line.c_str(), len);

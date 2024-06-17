@@ -13,9 +13,9 @@ public:
     CSVWriter(const std::string &filename);
     ~CSVWriter();
 
-    void writeRow(const std::vector<std::string> &row);
-
     void writeValues(double time, Vector_3D vec_xl, Vector_3D vec_g);
+    void writeRow(const std::vector<std::string> &row);
+    void writeLine(std::string line);
 
 private:
     std::ofstream outFile; // File stream

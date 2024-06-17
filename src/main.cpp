@@ -1,4 +1,6 @@
 #include <iostream>
+#include <iomanip>
+#include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <chrono>
@@ -93,9 +95,24 @@ int main(int argc, char *argv[])
     sensor.write_ctrl2_g(GY_ODR::LSM6DSO_GY_UI_6667Hz_HP, GY_FS::LSM6DSO_GY_UI_125dps);
 
     // Initialize save file
-    CSVWriter writer("output.csv");
+    CSVWriter csv_file("measurement/data/output.csv");
 
-    writer.writeRow({
+    // read current date
+    std::time_t date_time = std::time(nullptr);
+    std::tm *now = std::localtime(&date_time);
+    std::ostringstream oss;
+    // format current date
+    oss << (now->tm_year + 1900) << '-'
+        << std::setw(2) << std::setfill('0') << (now->tm_mon + 1) << '-'
+        << std::setw(2) << std::setfill('0') << now->tm_mday << ' '
+        << std::setw(2) << std::setfill('0') << now->tm_hour << ':'
+        << std::setw(2) << std::setfill('0') << now->tm_min << ':'
+        << std::setw(2) << std::setfill('0') << now->tm_sec << std::endl;
+
+    csv_file.writeLine("Date: " + oss.str());
+    csv_file.writeLine("Calibration: XL_ODR: 6667Hz, XL_FS: 4g, GY_ODR: 6667Hz, GY_FS: 125dps\n");
+
+    csv_file.writeRow({
         "Time(s)",
         "Acceleration X (g)",
         "Acceleration Y (g)",
@@ -107,7 +124,7 @@ int main(int argc, char *argv[])
 
     // Initialize time measurement
     auto start = std::chrono::high_resolution_clock::now();
-    int time = 0;
+    int second_counter = 0;
 
     while (true)
     {
@@ -123,16 +140,16 @@ int main(int argc, char *argv[])
             std::chrono::duration<double> duration = std::chrono::high_resolution_clock::now() - start;
 
             // write data
-            writer.writeValues(duration.count(), data_xl, data_gy);
+            csv_file.writeValues(duration.count(), data_xl, data_gy);
         }
 
         // keep track of duration
         std::chrono::duration<double> duration = std::chrono::high_resolution_clock::now() - start;
 
         // Output to show how long the measurement is running
-        if (duration.count() > time)
+        if (duration.count() > second_counter)
         {
-            time++;
+            second_counter++;
             std::cout << "Execution time: " << duration.count() << " seconds" << std::endl;
         }
     }
