@@ -129,14 +129,14 @@ int main(int argc, char *argv[])
     while (true)
     {
         // this triggers when a sensor value is ready, for both accelertion and gyro
-        if (xl_detected && gy_detected)
+        if (xl_detected || gy_detected)
         {
             xl_detected = false;
             gy_detected = false;
 
             // read sensor data and measure time difference
-            sensor.read_xl_data(data_xl);
-            sensor.read_gy_data(data_gy);
+            sensor.read_xl_gy_data(data_xl, data_gy);
+            // sensor.read_gy_data(data_gy);
             std::chrono::duration<double> duration = std::chrono::high_resolution_clock::now() - start;
 
             // write data
@@ -150,7 +150,10 @@ int main(int argc, char *argv[])
         if (duration.count() > second_counter)
         {
             second_counter++;
-            std::cout << "Execution time: " << duration.count() << " seconds" << std::endl;
+            std::cout << "Execution time: " << std::round(duration.count()) << " seconds" << std::endl;
+
+            printf("XL data: x:%f, y:%f, z:%f\n", data_xl.x, data_xl.y, data_xl.z);
+            printf("GY data: x:%f, y:%f, z:%f\n", data_gy.x, data_gy.y, data_gy.z);
         }
     }
 

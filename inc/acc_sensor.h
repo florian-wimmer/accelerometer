@@ -32,6 +32,8 @@ public:
     bool read_xl_data(Vector_3D &vec);
     bool read_gy_data(Vector_3D &vec);
 
+    bool read_xl_gy_data(Vector_3D &vec_xl, Vector_3D &vec_gy);
+
     bool read_single_xl_data(Vector_3D &vec);
 
 private:

@@ -245,6 +245,36 @@ bool Acceleration_Sensor::read_gy_data(Vector_3D &vec)
     return com_flag;
 }
 
+bool Acceleration_Sensor::read_xl_gy_data(Vector_3D &vec_xl, Vector_3D &vec_gy)
+{
+    bool com_flag = true;
+
+    uint8_t reg_array[13] = {0};
+    uint8_t value_array[13];
+
+    reg_array[0] = LSM6DSO_OUTX_L_G;
+
+    com_flag = readMultipleRegister(reg_array, value_array, 13);
+
+    vec_gy.x = (int16_t)(value_array[2] << 8 | value_array[1]);
+    vec_gy.y = (int16_t)(value_array[4] << 8 | value_array[3]);
+    vec_gy.z = (int16_t)(value_array[6] << 8 | value_array[5]);
+
+    vec_gy.x = vec_gy.x * LSB_16BIT * 2 * gy_gain;
+    vec_gy.y = vec_gy.y * LSB_16BIT * 2 * gy_gain;
+    vec_gy.z = vec_gy.z * LSB_16BIT * 2 * gy_gain;
+
+    vec_xl.x = (int16_t)(value_array[8] << 8 | value_array[7]);
+    vec_xl.y = (int16_t)(value_array[10] << 8 | value_array[9]);
+    vec_xl.z = (int16_t)(value_array[12] << 8 | value_array[11]);
+
+    vec_xl.x = vec_xl.x * LSB_16BIT * 2 * xl_gain;
+    vec_xl.y = vec_xl.y * LSB_16BIT * 2 * xl_gain;
+    vec_xl.z = vec_xl.z * LSB_16BIT * 2 * xl_gain;
+
+    return com_flag;
+}
+
 // read the current xl value (g)
 // reads each regsiter seperatly, therefore slow
 bool Acceleration_Sensor::read_single_xl_data(Vector_3D &vec)

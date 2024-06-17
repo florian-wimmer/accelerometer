@@ -27,7 +27,8 @@ pio.templates.default = 'simple_white'+'+default_theme'
 
 
 def main():
-    plotData()
+    checkDelta()
+    #plotData()
 
 
 def plotData():
@@ -61,9 +62,27 @@ def plotData():
         ),
     )
 
-    figure.show()
+    #figure.show()
     #figure.write_html("../measurement/html/" + name + ".html")
     #figure.write_image("../measurement/image/" + name + ".png")
 
+
+
+
+def checkDelta():
+    
+    df = pd.read_csv("../measurement/data/output.csv", header = 2)
+    
+    df['delta_t'] = df['Time(s)'].diff()
+
+    # Sort the DataFrame by the delta_t column in descending order
+    sorted_df = df.sort_values(by='delta_t', ascending=False)
+
+    # Get the first 100 elements of the sorted DataFrame
+    first_100_max_delta_t = sorted_df.head(100)
+
+    # Iterate over the first 100 rows and print index and delta_t value
+    for i, (idx, row) in enumerate(first_100_max_delta_t.iterrows()):
+        print(f"Pos: {i},Index: {idx}, Delta_t value: {row['delta_t']}")    
 
 main()
