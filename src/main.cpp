@@ -91,8 +91,8 @@ int main(int argc, char *argv[])
     sensor.write_int1_ctrl(INT_CTRL::INT_DRDY_XL);
     sensor.write_int2_ctrl(INT_CTRL::INT_DRDY_G);
     // Define Sensor Speed and Resolution
-    sensor.write_ctrl1_xl(XL_ODR::LSM6DSO_XL_UI_6667Hz_HP, XL_FS::LSM6DSO_XL_UI_4g);
-    sensor.write_ctrl2_g(GY_ODR::LSM6DSO_GY_UI_6667Hz_HP, GY_FS::LSM6DSO_GY_UI_125dps);
+    sensor.write_ctrl1_xl(XL_ODR::LSM6DSO_XL_UI_6667Hz_HP, XL_FS::LSM6DSO_XL_UI_16g);
+    sensor.write_ctrl2_g(GY_ODR::LSM6DSO_GY_UI_6667Hz_HP, GY_FS::LSM6DSO_GY_UI_2000dps);
 
     // Initialize save file
     CSVWriter csv_file("measurement/data/output.csv");
@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
         << std::setw(2) << std::setfill('0') << now->tm_sec << std::endl;
 
     csv_file.writeLine("Date: " + oss.str());
-    csv_file.writeLine("Calibration: XL_ODR: 6667Hz, XL_FS: 4g, GY_ODR: 6667Hz, GY_FS: 125dps\n");
+    csv_file.writeLine("Calibration: XL_ODR: 6667Hz, XL_FS: 16g, GY_ODR: 6667Hz, GY_FS: 2000dps\n");
 
     csv_file.writeRow({
         "Time(s)",
@@ -129,14 +129,15 @@ int main(int argc, char *argv[])
     while (true)
     {
         // this triggers when a sensor value is ready, for both accelertion and gyro
-        if (xl_detected || gy_detected)
+        if (xl_detected && gy_detected)
         {
             xl_detected = false;
             gy_detected = false;
 
             // read sensor data and measure time difference
-            sensor.read_xl_gy_data(data_xl, data_gy);
-            // sensor.read_gy_data(data_gy);
+            // sensor.read_xl_gy_data(data_xl, data_gy);
+            sensor.read_xl_data(data_xl);
+            sensor.read_gy_data(data_gy);
             std::chrono::duration<double> duration = std::chrono::high_resolution_clock::now() - start;
 
             // write data

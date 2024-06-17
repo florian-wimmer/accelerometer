@@ -35,7 +35,7 @@ def plotData():
     name = "acceleration"
     figure = go.Figure()
 
-    df = pd.read_csv("../measurement/data/output.csv", header = 2)
+    df = pd.read_csv("../measurement/data/output.csv", header = 0)
 
     # print(df)
 
