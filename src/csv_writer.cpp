@@ -18,9 +18,9 @@ CSVWriter::~CSVWriter()
     delete[] buffer;
 }
 
-void CSVWriter::writeValues(double time, Vector_3D vec_xl, Vector_3D vec_g)
+void CSVWriter::writeValues(double time, Vector_3D vec_xl, Vector_3D vec_g, int toe, int heel)
 {
-    writeRow({std::to_string(time), std::to_string(vec_xl.x), std::to_string(vec_xl.y), std::to_string(vec_xl.z), std::to_string(vec_g.x), std::to_string(vec_g.y), std::to_string(vec_g.z)});
+    writeRow({std::to_string(time), std::to_string(vec_xl.x), std::to_string(vec_xl.y), std::to_string(vec_xl.z), std::to_string(vec_g.x), std::to_string(vec_g.y), std::to_string(vec_g.z), std::to_string(toe), std::to_string(heel)});
 }
 
 void CSVWriter::writeRow(const std::vector<std::string> &row)

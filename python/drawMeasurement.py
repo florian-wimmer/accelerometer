@@ -27,7 +27,7 @@ pio.templates.default = 'simple_white'+'+default_theme'
 
 
 def main():
-    checkDelta()
+    #checkDelta()
     plotData()
 
 
@@ -35,7 +35,7 @@ def plotData():
     name = "acceleration"
     figure = go.Figure()
 
-    df = pd.read_csv("../measurement/data/output1.csv", header = 2)
+    df = pd.read_csv("../measurement/data/output_toe_heel.csv", header = 2)
 
     # print(df)
 
@@ -48,6 +48,9 @@ def plotData():
     figure.add_trace(go.Scatter(x=df["Time(s)"], y=df["Angular Momentum X (dps)"], mode="lines", name="Angular Momentum X (dps)"))
     figure.add_trace(go.Scatter(x=df["Time(s)"], y=df["Angular Momentum Y (dps)"], mode="lines", name="Angular Momentum Y (dps)"))
     figure.add_trace(go.Scatter(x=df["Time(s)"], y=df["Angular Momentum Z (dps)"], mode="lines", name="Angular Momentum Z (dps)"))
+
+    figure.add_trace(go.Scatter(x=df["Time(s)"], y=df["Toe Button"]*15, mode="lines", name="Toe Button"))
+    figure.add_trace(go.Scatter(x=df["Time(s)"], y=df["Heel Button"]*15, mode="lines", name="Heel Button"))
 
     figure.update_layout(
         title=dict(

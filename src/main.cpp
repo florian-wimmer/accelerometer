@@ -21,6 +21,8 @@ static const char *device = "/dev/spidev0.0";
 
 bool xl_detected = true;
 bool gy_detected = true;
+bool toe_detected = false;
+bool heel_detected = false;
 
 CSVWriter csv_file("measurement/data/output.csv", 1024 * 1024 * 1024);
 
@@ -37,6 +39,25 @@ void handle_event(struct gpiod_line_event *event, int pin_number)
         if (pin_number == 6)
         {
             gy_detected = true;
+        }
+        if (pin_number == 20)
+        {
+            toe_detected = true;
+        }
+        if (pin_number == 21)
+        {
+            heel_detected = true;
+        }
+    }
+    if (event->event_type == GPIOD_LINE_EVENT_FALLING_EDGE)
+    {
+        if (pin_number == 20)
+        {
+            toe_detected = false;
+        }
+        if (pin_number == 21)
+        {
+            heel_detected = false;
         }
     }
 }
@@ -81,9 +102,15 @@ int main(int argc, char *argv[])
     GPIO_Pin int_Pin_1(6, GPIO_Pin::Direction::INPUT); // INT_1
     GPIO_Pin int_Pin_2(5, GPIO_Pin::Direction::INPUT); // INT_2
 
+    // Step Interrupt Pins
+    GPIO_Pin int_Pin_3(20, GPIO_Pin::Direction::INPUT); // INT_TOE
+    GPIO_Pin int_Pin_4(21, GPIO_Pin::Direction::INPUT); // INT_HEEL
+
     // Start event listener thread
     std::thread listener_thread1(event_listener, int_Pin_1.get_line(), int_Pin_1.get_pin_number());
     std::thread listener_thread2(event_listener, int_Pin_2.get_line(), int_Pin_2.get_pin_number());
+    std::thread listener_thread3(event_listener, int_Pin_3.get_line(), int_Pin_3.get_pin_number());
+    std::thread listener_thread4(event_listener, int_Pin_4.get_line(), int_Pin_4.get_pin_number());
 
     // Listen to CTRL+C
     signal(SIGINT, signalHandler);
@@ -127,15 +154,15 @@ int main(int argc, char *argv[])
     csv_file.writeLine("Date: " + oss.str());
     csv_file.writeLine("Calibration: XL_ODR: 6667Hz, XL_FS: 16g, GY_ODR: 6667Hz, GY_FS: 2000dps\n");
 
-    csv_file.writeRow({
-        "Time(s)",
-        "Acceleration X (g)",
-        "Acceleration Y (g)",
-        "Acceleration Z (g)",
-        "Angular Momentum X (dps)",
-        "Angular Momentum Y (dps)",
-        "Angular Momentum Z (dps)",
-    });
+    csv_file.writeRow({"Time(s)",
+                       "Acceleration X (g)",
+                       "Acceleration Y (g)",
+                       "Acceleration Z (g)",
+                       "Angular Momentum X (dps)",
+                       "Angular Momentum Y (dps)",
+                       "Angular Momentum Z (dps)",
+                       "Toe Button",
+                       "Heel Button"});
 
     // Initialize time measurement
     auto start = std::chrono::high_resolution_clock::now();
@@ -156,7 +183,7 @@ int main(int argc, char *argv[])
             std::chrono::duration<double> duration = std::chrono::high_resolution_clock::now() - start;
 
             // write data
-            csv_file.writeValues(duration.count(), data_xl, data_gy);
+            csv_file.writeValues(duration.count(), data_xl, data_gy, toe_detected, heel_detected);
         }
 
         // keep track of duration
@@ -170,6 +197,14 @@ int main(int argc, char *argv[])
 
             printf("XL data: x:%f, y:%f, z:%f\n", data_xl.x, data_xl.y, data_xl.z);
             printf("GY data: x:%f, y:%f, z:%f\n", data_gy.x, data_gy.y, data_gy.z);
+            if (toe_detected)
+            {
+                printf("Toe detected\n");
+            }
+            if (heel_detected)
+            {
+                printf("Heel detected\n");
+            }
         }
     }
 

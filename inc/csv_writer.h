@@ -14,7 +14,7 @@ public:
     ~CSVWriter();
 
     void writeRow(const std::vector<std::string> &row);
-    void writeValues(double time, Vector_3D vec_xl, Vector_3D vec_g);
+    void writeValues(double time, Vector_3D vec_xl, Vector_3D vec_g, int toe, int heel);
     void writeLine(std::string line);
     void flushBuffer();
 
