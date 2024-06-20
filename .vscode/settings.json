@@ -54,6 +54,7 @@
         "csignal": "cpp",
         "cstring": "cpp",
         "fstream": "cpp",
-        "iomanip": "cpp"
+        "iomanip": "cpp",
+        "cinttypes": "cpp"
     }
 }

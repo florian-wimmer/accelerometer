@@ -37,6 +37,7 @@ void CSVWriter::writeRow(const std::vector<std::string> &row)
     line += '\n';
 
     size_t len = line.size();
+
     if (bufferIndex + len >= bufferSize)
     {
         flushBuffer();

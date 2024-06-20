@@ -28,14 +28,14 @@ pio.templates.default = 'simple_white'+'+default_theme'
 
 def main():
     checkDelta()
-    #plotData()
+    plotData()
 
 
 def plotData():
     name = "acceleration"
     figure = go.Figure()
 
-    df = pd.read_csv("../measurement/data/output.csv", header = 0)
+    df = pd.read_csv("../measurement/data/output1.csv", header = 2)
 
     # print(df)
 
@@ -45,9 +45,9 @@ def plotData():
     figure.add_trace(go.Scatter(x=df["Time(s)"], y=df["Acceleration Y (g)"], mode="lines", name="Acceleration Y (g)"))
     figure.add_trace(go.Scatter(x=df["Time(s)"], y=df["Acceleration Z (g)"], mode="lines", name="Acceleration Z (g)"))
 
-    #figure.add_trace(go.Scatter(x=df["Time(s)"], y=df["Angular Momentum X (dps)"], mode="lines", name="Angular Momentum X (dps)"))
-    #figure.add_trace(go.Scatter(x=df["Time(s)"], y=df["Angular Momentum Y (dps)"], mode="lines", name="Angular Momentum Y (dps)"))
-    #figure.add_trace(go.Scatter(x=df["Time(s)"], y=df["Angular Momentum Z (dps)"], mode="lines", name="Angular Momentum Z (dps)"))
+    figure.add_trace(go.Scatter(x=df["Time(s)"], y=df["Angular Momentum X (dps)"], mode="lines", name="Angular Momentum X (dps)"))
+    figure.add_trace(go.Scatter(x=df["Time(s)"], y=df["Angular Momentum Y (dps)"], mode="lines", name="Angular Momentum Y (dps)"))
+    figure.add_trace(go.Scatter(x=df["Time(s)"], y=df["Angular Momentum Z (dps)"], mode="lines", name="Angular Momentum Z (dps)"))
 
     figure.update_layout(
         title=dict(
@@ -62,7 +62,7 @@ def plotData():
         ),
     )
 
-    #figure.show()
+    figure.show()
     #figure.write_html("../measurement/html/" + name + ".html")
     #figure.write_image("../measurement/image/" + name + ".png")
 

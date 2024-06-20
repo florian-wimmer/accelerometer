@@ -14,12 +14,15 @@
 #include <gpiod.h>
 #include <unistd.h>
 #include <thread>
+#include <cstdlib>
 
 // Device defintion for SPI Communition, depends on the used SPI interface.
 static const char *device = "/dev/spidev0.0";
 
 bool xl_detected = true;
 bool gy_detected = true;
+
+CSVWriter csv_file("measurement/data/output.csv", 1024 * 1024 * 1024);
 
 // Interrupt service routine (ISR)
 void handle_event(struct gpiod_line_event *event, int pin_number)
@@ -60,6 +63,15 @@ void event_listener(gpiod_line *line, int pin_number)
     }
 }
 
+void signalHandler(int signal)
+{
+    std::cout << "Interrupt signal (" << signal << ") received.\n";
+    // Cleanup and close up stuff here
+    csv_file.~CSVWriter();
+    // Terminate program
+    exit(signal);
+}
+
 int main(int argc, char *argv[])
 {
     // Data Variable
@@ -72,6 +84,9 @@ int main(int argc, char *argv[])
     // Start event listener thread
     std::thread listener_thread1(event_listener, int_Pin_1.get_line(), int_Pin_1.get_pin_number());
     std::thread listener_thread2(event_listener, int_Pin_2.get_line(), int_Pin_2.get_pin_number());
+
+    // Listen to CTRL+C
+    signal(SIGINT, signalHandler);
 
     // Acceleration Sensor
     Acceleration_Sensor sensor(device, 17);
@@ -95,7 +110,7 @@ int main(int argc, char *argv[])
     sensor.write_ctrl2_g(GY_ODR::LSM6DSO_GY_UI_6667Hz_HP, GY_FS::LSM6DSO_GY_UI_2000dps);
 
     // Initialize save file
-    CSVWriter csv_file("measurement/data/output.csv");
+    // csv_file = new
 
     // read current date
     std::time_t date_time = std::time(nullptr);

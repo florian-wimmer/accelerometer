@@ -16,6 +16,7 @@ public:
     void writeRow(const std::vector<std::string> &row);
     void writeValues(double time, Vector_3D vec_xl, Vector_3D vec_g);
     void writeLine(std::string line);
+    void flushBuffer();
 
 private:
     std::ofstream outFile;
@@ -23,8 +24,6 @@ private:
     size_t bufferSize;
     char *buffer;
     size_t bufferIndex;
-
-    void flushBuffer();
 };
 
 #endif // CSVWRITER_H
