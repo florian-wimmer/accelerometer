@@ -59,6 +59,7 @@ def plotData():
     df = df[df["Time(s)"] > 6]
     df["Time(s)"] = df["Time(s)"] - df.iloc[0]["Time(s)"]
     df = df[df["Time(s)"] < 6.4]
+    # df = df[df["Time(s)"] < 200]
 
     sampling_frequency = 1 / (df["Time(s)"].diff().mean())
     cutoff_frequency_acc = 100
@@ -122,7 +123,7 @@ def plotData():
     )
 
     figure.show()
-    # figure.write_html("../measurement/html/" + name + ".html")
+    figure.write_html("../measurement/html/" + name + ".html")
     # figure.write_image("../measurement/image/" + name + ".png")
 
 
