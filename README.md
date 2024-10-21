@@ -1,4 +1,4 @@
-# Acceleration Sensor
+# RSL-imu-contact-detection
 The C++ Programm, connect the Raspberry PI to the LSM6DSO 3D accelerometer and 3D gyroscope.
 The Programm also tracks the input of simple pressure switches.
 
