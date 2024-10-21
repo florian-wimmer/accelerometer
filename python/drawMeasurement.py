@@ -2,8 +2,8 @@
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.io as pio
-import numpy as np
 import scipy.signal
+import numpy as np
 
 # setting to disable window in pdf export
 # pio.kaleido.scope.mathjax = None
@@ -59,7 +59,9 @@ def plotData():
     df = df[df["Time(s)"] > 6]
     df["Time(s)"] = df["Time(s)"] - df.iloc[0]["Time(s)"]
     df = df[df["Time(s)"] < 6.4]
-    # df = df[df["Time(s)"] < 200]
+    #df = df[df["Time(s)"] < 200]
+
+    df.reset_index(drop=True, inplace=True)
 
     sampling_frequency = 1 / (df["Time(s)"].diff().mean())
     cutoff_frequency_acc = 100
@@ -67,15 +69,16 @@ def plotData():
 
     print("Sampling Frequency: ", sampling_frequency)
 
-    b, a = scipy.signal.iirfilter(4, Wn=cutoff_frequency_acc, fs=sampling_frequency, btype="low", ftype="butter")
-    c, d = scipy.signal.iirfilter(4, Wn=cutoff_frequency_am, fs=sampling_frequency, btype="low", ftype="butter")
+    # Butterworth Filter
+    num_acc, den_acc = scipy.signal.iirfilter(4, Wn=cutoff_frequency_acc, fs=sampling_frequency, btype="low", ftype="butter")
+    num_am, den_am = scipy.signal.iirfilter(4, Wn=cutoff_frequency_am, fs=sampling_frequency, btype="low", ftype="butter")
 
-    df["Acceleration X (g)"] = scipy.signal.lfilter(b, a, df["Acceleration X (g)"])
-    df["Acceleration Y (g)"] = scipy.signal.lfilter(b, a, df["Acceleration Y (g)"])
-    df["Acceleration Z (g)"] = scipy.signal.lfilter(b, a, df["Acceleration Z (g)"])
-    df["Angular Momentum X (dps)"] = scipy.signal.lfilter(c, d, df["Angular Momentum X (dps)"])
-    df["Angular Momentum Y (dps)"] = scipy.signal.lfilter(c, d, df["Angular Momentum Y (dps)"])
-    df["Angular Momentum Z (dps)"] = scipy.signal.lfilter(c, d, df["Angular Momentum Z (dps)"])
+    df["Acceleration X (g)"] = scipy.signal.lfilter(num_acc, den_acc, df["Acceleration X (g)"])
+    df["Acceleration Y (g)"] = scipy.signal.lfilter(num_acc, den_acc, df["Acceleration Y (g)"])
+    df["Acceleration Z (g)"] = scipy.signal.lfilter(num_acc, den_acc, df["Acceleration Z (g)"])
+    df["Angular Momentum X (dps)"] = scipy.signal.lfilter(num_am, den_am, df["Angular Momentum X (dps)"])
+    df["Angular Momentum Y (dps)"] = scipy.signal.lfilter(num_am, den_am, df["Angular Momentum Y (dps)"])
+    df["Angular Momentum Z (dps)"] = scipy.signal.lfilter(num_am, den_am, df["Angular Momentum Z (dps)"])
 
     figure.add_trace(go.Scatter(x=df["Time(s)"], y=df["Acceleration X (g)"] / 16, mode="lines", name="Acceleration X (g)"))
     figure.add_trace(go.Scatter(x=df["Time(s)"], y=df["Acceleration Y (g)"] / 16, mode="lines", name="Acceleration Y (g)"))
@@ -100,16 +103,28 @@ def plotData():
     df = fix_button_detection(df)
     figure.add_trace(go.Scatter(x=df["Time(s)"], y=df["Heel Button"], mode="lines", name="Heel Button"))
 
-    df = analytical_step_detection(df)
-    figure.add_trace(go.Scatter(x=df["Time(s)"], y=df["Stand detected"], mode="lines", name="Stand detected"))
-    # figure.add_trace(go.Scatter(x=df["Time(s)"], y=df["Flight detected"], mode="lines", name="Flight detected"))
-    # figure.add_trace(go.Scatter(x=df["Time(s)"], y=df["Stand init detected"], mode="lines", name="Stand init detected"))
+    # Analytical Step Detection
+    if False:
+        df = analytical_step_detection(df)
+        figure.add_trace(go.Scatter(x=df["Time(s)"], y=df["Stand detected"], mode="lines", name="Stand detected"))
+        # figure.add_trace(go.Scatter(x=df["Time(s)"], y=df["Flight detected"], mode="lines", name="Flight detected"))
+        # figure.add_trace(go.Scatter(x=df["Time(s)"], y=df["Stand init detected"], mode="lines", name="Stand init detected"))
 
-    figure.add_trace(go.Scatter(x=df["Time(s)"], y=abs(df["Heel Button"] - df["Stand detected"]), mode="lines", name="Diffrenece"))
+        figure.add_trace(go.Scatter(x=df["Time(s)"], y=abs(df["Heel Button"] - df["Stand detected"]), mode="lines", name="Difference"))
 
-    equal_values = (df["Heel Button"] == df["Stand detected"]).sum()
+        equal_values = (df["Heel Button"] == df["Stand detected"]).sum()
 
-    print(f"{equal_values} out of {df.shape[0]} entries are equal, which are {equal_values / df.shape[0] * 100:.2f}%")
+        print(f"{equal_values} out of {df.shape[0]} entries are equal, which is {equal_values / df.shape[0] * 100:.2f}%")
+
+    # HMM Model Step Detection
+    value, result, time = data_short(df)
+
+    calc_r = calculate_weight(value, result)
+
+    figure.add_trace(go.Scatter(x=time, y=calc_r, mode="lines", name="Weighted Result"))
+
+
+
 
     figure.update_layout(
         title=dict(
@@ -235,6 +250,81 @@ def analytical_step_detection(df, threshold=0.1, threshold2=0.2):
                     stand_phase_init = False
 
     return df
+
+
+def data_short(df):
+    # Every step is sampled for 0.1 seconds, we filter at 100 Hz so lets try the 10 last, useful time samples so try to catch 0.01
+
+    print("Generate Data")
+    print("Time", df.iloc[-1]["Time(s)"])
+
+    step_big = 0.005
+    step_small = -0.001
+
+    time_offset = 0
+
+    values = []
+    result = []
+    time = []
+
+    for index, row in df.iterrows():
+        if (row["Time(s)"] - (time_offset * step_big) + (step_small * 10)) > step_big:
+            #print("Time: ", row["Time(s)"], index)
+            time_offset += 1
+
+            j = 0
+            k = index
+
+            value = []
+        
+            while True:
+                if df.iloc[k]["Time(s)"] - (time_offset * step_big) + (step_small * 10) < j * step_small:
+                    #print("Value @", df.iloc[k]["Time(s)"], k)
+                    value.append(df.iloc[k]["Time(s)"])
+                    #value.append(df.iloc[k]["Low Variance Signal"])
+
+                    j += 1
+                    
+                    if j > 9:
+                        break
+                                
+                k -= 1
+
+            result.append(df.iloc[index]["Heel Button"])
+            time.append(df.iloc[index]["Time(s)"])
+            
+            values.append(value)
+
+        # only for testing
+        #if row["Time(s)"] > 1:
+        #    break
+
+    #print("Values: ", len(values))
+
+    v_array = np.array(values)
+    r_array = np.array(result)
+    t_array = np.array(time)
+
+    print("Values: ", v_array.shape)
+    print("Result: ", r_array.shape)
+
+    #print(v_array)
+
+    return v_array, r_array, t_array
+
+
+def calculate_weight(v_array, r_array):
+
+    ones = np.ones((v_array.shape[0], 1))
+    X = np.concatenate((ones, v_array), axis=1)
+
+    w_star = np.linalg.inv(X.T @ X) @ X.T @ r_array
+
+    print(w_star)
+
+    calc_r = w_star @ X.T
+
+    return calc_r
 
 
 main()
