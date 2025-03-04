@@ -45,9 +45,18 @@ class DataAnalyzer:
         # Drop the 'Segment' column as it was only needed for processing
         df.drop(columns=["Segment"], inplace=True)
 
+        first_occurrence_index = df[df["Heel Button"] == 1].head(1).index[0]
+        last_occurrence_index = df[df["Heel Button"] == 1].tail(1).index[0]
+
+        print("first_occurrence: ", first_occurrence_index)
+        print("last_occurrence: ", last_occurrence_index)
+
+        df.loc[:first_occurrence_index, "Heel Button"] = 1
+        df.loc[last_occurrence_index:, "Heel Button"] = 1
+
         return df
 
-    def analytical_step_detection(df, threshold=0.1, threshold2=0.2):
+    def analytical_step_detection(df, threshold=0.1, threshold2=0.2, threshold3=0.1, threshold4=0.1):
         zero_crossing = 0
         flight_phase = False
         stand_phase_init = False
@@ -78,13 +87,13 @@ class DataAnalyzer:
                 flight_phase = True
 
                 if zero_crossing == 0:
-                    if value > 0:
+                    if value > threshold3:
                         zero_crossing = 1
                 if zero_crossing == 1:
-                    if value < 0:
+                    if value < -threshold3:
                         zero_crossing = 2
                 if zero_crossing == 2:
-                    if value > 0:
+                    if value > threshold3:
                         zero_crossing = 3
                 if zero_crossing == 3:
                     if value < 0:
@@ -96,7 +105,7 @@ class DataAnalyzer:
                 zero_crossing = 0
 
                 # wait for vibration to end
-                if stand_phase_init and value_x > threshold2:
+                if stand_phase_init and abs(value) > threshold4:
                     stand_phase_state = 1
                 if stand_phase_state == 1:
                     if value_x < 0:
